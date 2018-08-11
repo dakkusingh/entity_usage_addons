@@ -59,6 +59,7 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
       '#type' => 'select',
       // TODO: Expose these options in a YAML conf.
       '#options' => [
+        0 => 0,
         1 => 1,
         3 => 3,
         5 => 5,
@@ -111,6 +112,8 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
 
     foreach ($all_usages as $sourceType => $ids) {
       $maxExpanded = $this->getSetting('max_expanded');
+
+      // Count all usages to determine what type of display to show.
       $itemCount = count($ids);
 
       if ($itemCount > $maxExpanded) {
@@ -132,23 +135,29 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
   protected function detailed_usage($ids, $sourceType, $themeType = 'table') {
     $rows = [];
     $header = [];
+
+    // Get entity type manager storage.
     $typeStorage = \Drupal::service('entity_type.manager')->getStorage($sourceType);
 
+    // Loop over every usage entry for this entity.
     foreach ($ids as $sourceId => $records) {
       $sourceEntity = $typeStorage->load($sourceId);
-      $showFields = $this->getSetting('show_fields');
+      $showFields = array_filter($this->getSetting('show_fields'));
+
       $row = [];
 
-      if (isset($showFields['entity'])) {
+      // Show Entity field.
+      if (in_array('entity', $showFields)) {
         $link = $sourceEntity->toLink();
         $row[] = $link;
-        
+
         if (!key_exists('entity', $header)) {
           $header['entity'] = $this->t('Entity');
         }
       }
 
-      if (isset($showFields['status'])) {
+      // Show Status field.
+      if (in_array('status', $showFields)) {
         if (isset($sourceEntity->status)) {
           $published = !empty($sourceEntity->status->value) ? $this->t('Published') : $this->t('Unpublished');
         }
@@ -163,7 +172,8 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
         }
       }
 
-      if (isset($showFields['status'])) {
+      // Show Type field.
+      if (in_array('type', $showFields)) {
         $row[] = $sourceEntity->getEntityTypeId();
 
         if (!key_exists('type', $header)) {
@@ -174,11 +184,14 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
       $rows[] = $row;
     }
 
+    // Render Table.
     $build = [
+      // TODO Add logic to get list.
       '#theme' => 'table',
       '#rows' => $rows,
     ];
 
+    // Add header if required.
     if ($this->getSetting('show_header')) {
       $build['#header'] = $header;
     }
@@ -186,10 +199,17 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
     return $build;
   }
 
+  /**
+   * @param $itemCount
+   * @param $entity
+   *
+   * @return \Drupal\Core\GeneratedLink
+   */
   protected function linked_usage($itemCount, $entity) {
     $route = "entity.{$entity->getEntityTypeId()}.entity_usage";
     $url = Url::fromRoute($route, [$entity->getEntityTypeId() => $entity->id()]);
     $link = Link::fromTextAndUrl($itemCount, $url);
+
     return $link->toString();
   }
 }
