@@ -41,6 +41,9 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
     // Default fields to show.
     $settings['show_fields'] = "entity";
 
+    // Show header.
+    $settings['show_header'] = FALSE;
+
     return $settings;
   }
 
@@ -67,16 +70,21 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
       '#default_value' => $this->getSetting('max_expanded'),
     ];
 
+    $form['show_header'] = [
+      '#title' => $this->t('Show Header'),
+      '#description' => $this->t('Show Header?.'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->getSetting('show_header'),
+    ];
+
     $form['show_fields'] = [
       '#title' => $this->t('Show Fields'),
       '#description' => $this->t('Select the fields to display.'),
       '#type' => 'checkboxes',
       '#options' => [
         'entity' => $this->t('Entity'),
-        'type' => $this->t('Type'),
-        'field_name' => $this->t('Field name'),
         'status' => $this->t('Status'),
-        'used_in' => $this->t('Used in'),
+        'type' => $this->t('Type'),
       ],
       '#default_value' => $this->getSetting('show_fields'),
     ];
@@ -115,20 +123,6 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
   }
 
   /**
-   * {@inheritdoc}
-   */
-//  public function viewElements(FieldItemListInterface $items, $langcode) {
-//    $elements = [];
-//
-//    foreach ($items as $delta => $item) {
-//      $elements[$delta] = ['#markup' => $item->value];
-//      //ksm($item);
-//    }
-//
-//    return $elements;
-//  }
-
-  /**
    * @param $ids
    * @param $sourceType
    * @param string $themeType
@@ -137,43 +131,57 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
    */
   protected function detailed_usage($ids, $sourceType, $themeType = 'table') {
     $rows = [];
-
+    $header = [];
     $typeStorage = \Drupal::service('entity_type.manager')->getStorage($sourceType);
 
     foreach ($ids as $sourceId => $records) {
       $sourceEntity = $typeStorage->load($sourceId);
-      $link = $sourceEntity->toLink();
+      $showFields = $this->getSetting('show_fields');
+      $row = [];
 
-      if (isset($sourceEntity->status)) {
-        $published = !empty($sourceEntity->status->value) ? $this->t('Published') : $this->t('Unpublished');
-      }
-      else {
-        $published = '';
+      if (isset($showFields['entity'])) {
+        $link = $sourceEntity->toLink();
+        $row[] = $link;
+        
+        if (!key_exists('entity', $header)) {
+          $header['entity'] = $this->t('Entity');
+        }
       }
 
-      $rows[] = [
-        $link,
-        //$sourceType->getLabel(),
-        //$languages[$default_langcode]->getName(),
-        //$field_label,
-        $published,
-        //$used_in_text,
-      ];
+      if (isset($showFields['status'])) {
+        if (isset($sourceEntity->status)) {
+          $published = !empty($sourceEntity->status->value) ? $this->t('Published') : $this->t('Unpublished');
+        }
+        else {
+          $published = '';
+        }
+
+        $row[] = $published;
+
+        if (!key_exists('status', $header)) {
+          $header['status'] = $this->t('Status');
+        }
+      }
+
+      if (isset($showFields['status'])) {
+        $row[] = $sourceEntity->getEntityTypeId();
+
+        if (!key_exists('type', $header)) {
+          $header['type'] = $this->t('Type');
+        }
+      }
+
+      $rows[] = $row;
     }
-
-    $header = [
-      $this->t('Entity'),
-      //$this->t('Type'),
-      //$this->t('Field name'),
-      $this->t('Status'),
-      //$this->t('Used in'),
-    ];
 
     $build = [
       '#theme' => 'table',
       '#rows' => $rows,
-      '#header' => $header,
     ];
+
+    if ($this->getSetting('show_header')) {
+      $build['#header'] = $header;
+    }
 
     return $build;
   }
