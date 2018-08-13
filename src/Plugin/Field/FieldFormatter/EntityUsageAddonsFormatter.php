@@ -117,22 +117,28 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
       $itemCount = count($ids);
 
       if ($itemCount > $maxExpanded) {
-        return $this->linked_usage($itemCount, $entity);
+        return $this->linkedUsage($itemCount, $entity);
       }
       else {
-        return $this->detailed_usage($ids, $sourceType);
+        return $this->detailedUsage($ids, $sourceType);
       }
     }
   }
 
   /**
-   * @param $ids
-   * @param $sourceType
+   * Generate Detailed usage.
+   *
+   * @param array $ids
+   *   Ids.
+   * @param string $sourceType
+   *   Source Type.
    * @param string $themeType
+   *   Theme Type.
    *
    * @return array
+   *   Return the themed array.
    */
-  protected function detailed_usage($ids, $sourceType, $themeType = 'table') {
+  protected function detailedUsage(array $ids, $sourceType, $themeType = 'table') {
     $rows = [];
     $header = [];
 
@@ -151,7 +157,7 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
         $link = $sourceEntity->toLink();
         $row[] = $link;
 
-        if (!key_exists('entity', $header)) {
+        if (!array_key_exists('entity', $header)) {
           $header['entity'] = $this->t('Entity');
         }
       }
@@ -167,7 +173,7 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
 
         $row[] = $published;
 
-        if (!key_exists('status', $header)) {
+        if (!array_key_exists('status', $header)) {
           $header['status'] = $this->t('Status');
         }
       }
@@ -176,7 +182,7 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
       if (in_array('type', $showFields)) {
         $row[] = $sourceEntity->getEntityTypeId();
 
-        if (!key_exists('type', $header)) {
+        if (!array_key_exists('type', $header)) {
           $header['type'] = $this->t('Type');
         }
       }
@@ -200,16 +206,22 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
   }
 
   /**
-   * @param $itemCount
-   * @param $entity
+   * Linked Usage.
+   *
+   * @param int $itemCount
+   *   Item Count.
+   * @param object $entity
+   *   Source Entity.
    *
    * @return \Drupal\Core\GeneratedLink
+   *   Link.
    */
-  protected function linked_usage($itemCount, $entity) {
+  protected function linkedUsage($itemCount, $entity) {
     $route = "entity.{$entity->getEntityTypeId()}.entity_usage";
     $url = Url::fromRoute($route, [$entity->getEntityTypeId() => $entity->id()]);
     $link = Link::fromTextAndUrl($itemCount, $url);
 
     return $link->toString();
   }
+
 }
