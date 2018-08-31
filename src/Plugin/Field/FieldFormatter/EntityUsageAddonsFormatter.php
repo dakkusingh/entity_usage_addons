@@ -6,8 +6,6 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\file\Plugin\Field\FieldFormatter\BaseFieldFileFormatterBase;
-use Drupal\Core\Url;
-use Drupal\Core\Link;
 
 /**
  * Formatter that shows the file size in a human readable way.
@@ -98,17 +96,18 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
    */
   protected function viewValue(FieldItemInterface $item) {
     $entityType = $item->getEntity()->getEntityType()->id();
+    $entityId = $item->value;
 
-    $entity = \Drupal::service('entity_type.manager')
-      ->getStorage($entityType)
-      ->load($item->value);
-
-    $all_usages = \Drupal::service('entity_usage.usage')->listUsage($entity);
+    $all_usages = \Drupal::service('entity_usage_addons.usage')
+      ->getUsage($entityType, $entityId);
 
     // If there is no usage, breakout.
     if (empty($all_usages)) {
       return;
     }
+
+    $showFields = array_filter($this->getSetting('show_fields'));
+    $showHeader = $this->getSetting('show_header');
 
     foreach ($all_usages as $sourceType => $ids) {
       $maxExpanded = $this->getSetting('max_expanded');
@@ -117,111 +116,14 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
       $itemCount = count($ids);
 
       if ($itemCount > $maxExpanded) {
-        return $this->linkedUsage($itemCount, $entity);
+        return \Drupal::service('entity_usage_addons.usage')
+          ->linkedUsage($itemCount, $entityType, $entityId);
       }
       else {
-        return $this->detailedUsage($ids, $sourceType);
+        return \Drupal::service('entity_usage_addons.usage')
+          ->detailedUsage($ids, $sourceType, $showFields, $showHeader);
       }
     }
-  }
-
-  /**
-   * Generate Detailed usage.
-   *
-   * @param array $ids
-   *   Ids.
-   * @param string $sourceType
-   *   Source Type.
-   * @param string $themeType
-   *   Theme Type.
-   *
-   * @return array
-   *   Return the themed array.
-   */
-  protected function detailedUsage(array $ids, $sourceType, $themeType = 'table') {
-    $rows = [];
-    $header = [];
-
-    // Get entity type manager storage.
-    $typeStorage = \Drupal::service('entity_type.manager')->getStorage($sourceType);
-
-    // Loop over every usage entry for this entity.
-    foreach ($ids as $sourceId => $records) {
-      $sourceEntity = $typeStorage->load($sourceId);
-      $showFields = array_filter($this->getSetting('show_fields'));
-
-      $row = [];
-
-      // Show Entity field.
-      if (in_array('entity', $showFields)) {
-        $link = $sourceEntity->toLink();
-        $row[] = $link;
-
-        if (!array_key_exists('entity', $header)) {
-          $header['entity'] = $this->t('Entity');
-        }
-      }
-
-      // Show Status field.
-      if (in_array('status', $showFields)) {
-        if (isset($sourceEntity->status)) {
-          $published = !empty($sourceEntity->status->value) ? $this->t('Published') : $this->t('Unpublished');
-        }
-        else {
-          $published = '';
-        }
-
-        $row[] = $published;
-
-        if (!array_key_exists('status', $header)) {
-          $header['status'] = $this->t('Status');
-        }
-      }
-
-      // Show Type field.
-      if (in_array('type', $showFields)) {
-        $row[] = $sourceEntity->getEntityTypeId();
-
-        if (!array_key_exists('type', $header)) {
-          $header['type'] = $this->t('Type');
-        }
-      }
-
-      $rows[] = $row;
-    }
-
-    // Render Table.
-    $build = [
-      // TODO Add logic to get list.
-      '#theme' => 'table',
-      '#rows' => $rows,
-    ];
-
-    // Add header if required.
-    if ($this->getSetting('show_header')) {
-      $build['#header'] = $header;
-    }
-
-    return $build;
-  }
-
-  /**
-   * Linked Usage.
-   *
-   * @param int $itemCount
-   *   Item Count.
-   * @param object $entity
-   *   Source Entity.
-   *
-   * @return \Drupal\Core\GeneratedLink
-   *   Link.
-   */
-  protected function linkedUsage($itemCount, $entity) {
-    $route = "entity.{$entity->getEntityTypeId()}.entity_usage";
-    $url = Url::fromRoute($route, [$entity->getEntityTypeId() => $entity->id()]);
-    $link = Link::fromTextAndUrl($itemCount, $url);
-
-    return $link->toString();
   }
 
 }
