@@ -115,7 +115,7 @@ class Usage {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityMalformedException
    */
-  protected function detailedUsage(array $ids, $sourceType, array $showFields, $showHeader) {
+  public function detailedUsage(array $ids, $sourceType, array $showFields, $showHeader) {
     $rows = [];
     $header = [];
 
