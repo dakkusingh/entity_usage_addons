@@ -101,8 +101,6 @@ class Usage {
    *
    * @param array $ids
    *   Ids.
-   * @param string $sourceType
-   *   Source Type.
    * @param array $showFields
    *   Fields array.
    * @param bool $showHeader
@@ -115,18 +113,27 @@ class Usage {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityMalformedException
    */
-  public function detailedUsage(array $ids, $sourceType, array $showFields, $showHeader) {
+  public function detailedUsage(array $ids, array $showFields, $showHeader) {
     $rows = [];
     $header = [];
 
     // Loop over every usage entry for this entity.
-    foreach ($ids as $sourceId => $records) {
+    foreach ($ids as $sourceId => $sourceType) {
       $sourceEntity = $this->entityTypeManager->getStorage($sourceType)->load($sourceId);
       $row = [];
 
       // Show Entity field.
       if (in_array('entity', $showFields)) {
-        $link = $sourceEntity->toLink();
+        if (!empty($sourceEntity->hasLinkTemplate('canonical'))) {
+          $link = $sourceEntity->toLink();
+        }
+        else{
+          // TODO If we have a paragraph, resolve the url to the parent entity
+          // For now we will simply display a link.
+          // See Issue #3000184
+          $link =  $sourceEntity->label();
+        }
+
         $row[] = $link;
 
         if (!array_key_exists('entity', $header)) {
