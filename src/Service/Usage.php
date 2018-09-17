@@ -127,11 +127,11 @@ class Usage {
         if (!empty($sourceEntity->hasLinkTemplate('canonical'))) {
           $link = $sourceEntity->toLink();
         }
-        else{
+        else {
           // TODO If we have a paragraph, resolve the url to the parent entity
           // For now we will simply display a link.
-          // See Issue #3000184
-          $link =  $sourceEntity->label();
+          // See Issue #3000184.
+          $link = $sourceEntity->label();
         }
 
         $row[] = $link;
