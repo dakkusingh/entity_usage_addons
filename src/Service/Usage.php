@@ -99,8 +99,8 @@ class Usage {
   /**
    * Generate Detailed usage.
    *
-   * @param array $ids
-   *   Ids.
+   * @param array $all_usages
+   *   All usage.
    * @param array $showFields
    *   Fields array.
    * @param bool $showHeader
@@ -113,61 +113,63 @@ class Usage {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityMalformedException
    */
-  public function detailedUsage(array $ids, array $showFields, $showHeader) {
+  public function detailedUsage(array $all_usages, array $showFields, $showHeader) {
     $rows = [];
     $header = [];
 
-    // Loop over every usage entry for this entity.
-    foreach ($ids as $sourceId => $sourceType) {
-      $sourceEntity = $this->entityTypeManager->getStorage($sourceType)->load($sourceId);
-      $row = [];
+    foreach ($all_usages as $sourceType => $ids) {
+      // Loop over every usage entry for this entity.
+      foreach ($ids as $key => $value) {
+        $sourceEntity = $this->entityTypeManager->getStorage($sourceType)->load($key);
+        $row = [];
 
-      // Show Entity field.
-      if (in_array('entity', $showFields)) {
-        if (!empty($sourceEntity->hasLinkTemplate('canonical'))) {
-          $link = $sourceEntity->toLink();
-        }
-        else {
-          // TODO If we have a paragraph, resolve the url to the parent entity
-          // For now we will simply display a link.
-          // See Issue #3000184.
-          $link = $sourceEntity->label();
+        // Show Entity field.
+        if (in_array('entity', $showFields)) {
+          if (!empty($sourceEntity->hasLinkTemplate('canonical'))) {
+            $link = $sourceEntity->toLink();
+          }
+          else {
+            // TODO If we have a paragraph, resolve the url to the parent entity
+            // For now we will simply display a link.
+            // See Issue #3000184.
+            $link = $sourceEntity->label();
+          }
+
+          $row[] = $link;
+
+          if (!array_key_exists('entity', $header)) {
+            $header['entity'] = $this->t('Entity');
+          }
         }
 
-        $row[] = $link;
+        // Show Status field.
+        if (in_array('status', $showFields)) {
+          if (isset($sourceEntity->status)) {
+            $published = !empty($sourceEntity->status->value) ? $this->t('Published') : $this->t('Unpublished');
+          }
+          else {
+            $published = '';
+          }
 
-        if (!array_key_exists('entity', $header)) {
-          $header['entity'] = $this->t('Entity');
+          $row[] = $published;
+
+          // Build the header only once.
+          if (!array_key_exists('status', $header)) {
+            $header['status'] = $this->t('Status');
+          }
         }
+
+        // Show Type field.
+        if (in_array('type', $showFields)) {
+          $row[] = $sourceEntity->getEntityTypeId();
+
+          if (!array_key_exists('type', $header)) {
+            $header['type'] = $this->t('Type');
+          }
+        }
+
+        $rows[] = $row;
       }
-
-      // Show Status field.
-      if (in_array('status', $showFields)) {
-        if (isset($sourceEntity->status)) {
-          $published = !empty($sourceEntity->status->value) ? $this->t('Published') : $this->t('Unpublished');
-        }
-        else {
-          $published = '';
-        }
-
-        $row[] = $published;
-
-        // Build the header only once.
-        if (!array_key_exists('status', $header)) {
-          $header['status'] = $this->t('Status');
-        }
-      }
-
-      // Show Type field.
-      if (in_array('type', $showFields)) {
-        $row[] = $sourceEntity->getEntityTypeId();
-
-        if (!array_key_exists('type', $header)) {
-          $header['type'] = $this->t('Type');
-        }
-      }
-
-      $rows[] = $row;
     }
 
     // Render Table.

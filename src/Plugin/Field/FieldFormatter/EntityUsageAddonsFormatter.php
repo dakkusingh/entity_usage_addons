@@ -110,15 +110,11 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
     $showHeader = $this->getSetting('show_header');
 
     $itemCount = 0;
-    $allIds = [];
+    $maxExpanded = $this->getSetting('max_expanded');
+
     foreach ($all_usages as $sourceType => $ids) {
-      $maxExpanded = $this->getSetting('max_expanded');
       // Count all usages to determine what type of display to show.
       $itemCount += count($ids);
-
-      foreach ($ids as $key => $value) {
-        $allIds[$key] = $sourceType;
-      }
     }
 
     if ($itemCount > $maxExpanded) {
@@ -127,7 +123,7 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
     }
     else {
       return \Drupal::service('entity_usage_addons.usage')
-        ->detailedUsage($allIds, $showFields, $showHeader);
+        ->detailedUsage($all_usages, $showFields, $showHeader);
     }
   }
 
