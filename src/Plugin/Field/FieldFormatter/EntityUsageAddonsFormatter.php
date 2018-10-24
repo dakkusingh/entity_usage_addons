@@ -12,7 +12,7 @@ use Drupal\file\Plugin\Field\FieldFormatter\BaseFieldFileFormatterBase;
  *
  * @FieldFormatter(
  *   id = "entity_usage_addons_formatter",
- *   label = @Translation("Entity Usage"),
+ *   label = @Translation("Entity Usage - Detailed"),
  *   field_types = {
  *     "integer"
  *   }
@@ -97,33 +97,19 @@ class EntityUsageAddonsFormatter extends BaseFieldFileFormatterBase {
   protected function viewValue(FieldItemInterface $item) {
     $entityType = $item->getEntity()->getEntityType()->id();
     $entityId = $item->value;
-
-    $all_usages = \Drupal::service('entity_usage_addons.usage')
-      ->getUsage($entityType, $entityId);
-
-    // If there is no usage, breakout.
-    if (empty($all_usages)) {
-      return;
-    }
-
+    $maxExpanded = $this->getSetting('max_expanded');
     $showFields = array_filter($this->getSetting('show_fields'));
     $showHeader = $this->getSetting('show_header');
 
-    $itemCount = 0;
-    $maxExpanded = $this->getSetting('max_expanded');
+    // TODO Dependency Inject.
+    $entityUsageAddons = \Drupal::service('entity_usage_addons.usage');
+    $itemCount = $entityUsageAddons->getUsageTotal($entityType, $entityId);
 
-    foreach ($all_usages as $sourceType => $ids) {
-      // Count all usages to determine what type of display to show.
-      $itemCount += count($ids);
-    }
-
-    if ($itemCount > $maxExpanded) {
-      return \Drupal::service('entity_usage_addons.usage')
-        ->linkedUsage($itemCount, $entityType, $entityId);
+    if ($itemCount == 0 || $itemCount > $maxExpanded) {
+      return $entityUsageAddons->linkedUsage($entityType, $entityId);
     }
     else {
-      return \Drupal::service('entity_usage_addons.usage')
-        ->detailedUsage($all_usages, $showFields, $showHeader);
+      return $entityUsageAddons->detailedUsage($entityType, $entityId, $showFields, $showHeader);
     }
   }
 

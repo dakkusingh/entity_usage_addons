@@ -25,6 +25,9 @@ class Usage {
    */
   protected $loggerFactory;
 
+  private $entityUsage;
+  private $entityTypeManager;
+
   /**
    * Usage Class constructor.
    *
@@ -60,16 +63,13 @@ class Usage {
    *
    * @return array
    *   Return array of usage Ids.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getUsage($entityType, $entityId) {
     $entity = $this->entityTypeManager->getStorage($entityType)->load($entityId);
 
     if ($entity) {
-      $all_usages = $this->entityUsage->listUsage($entity);
-      return $all_usages;
+      $allUsages = $this->entityUsage->listUsage($entity);
+      return $allUsages;
     }
 
     return [];
@@ -78,8 +78,6 @@ class Usage {
   /**
    * Linked Usage.
    *
-   * @param int $itemCount
-   *   Item Count.
    * @param string $entityType
    *   Entity Type.
    * @param int $entityId
@@ -88,9 +86,10 @@ class Usage {
    * @return \Drupal\Core\GeneratedLink
    *   Link.
    */
-  public function linkedUsage($itemCount, $entityType, $entityId) {
+  public function linkedUsage($entityType, $entityId) {
     $route = "entity.{$entityType}.entity_usage";
     $url = Url::fromRoute($route, [$entityType => $entityId]);
+    $itemCount = $this->getUsageTotal($entityType, $entityId);
     $link = Link::fromTextAndUrl($itemCount, $url);
 
     return $link->toString();
@@ -99,25 +98,29 @@ class Usage {
   /**
    * Generate Detailed usage.
    *
-   * @param array $all_usages
-   *   All usage.
+   * @param string $entityType
+   *   Entity Type.
+   * @param int $entityId
+   *   Entity ID.
    * @param array $showFields
    *   Fields array.
    * @param bool $showHeader
    *   Show header setting.
    *
-   * @return array
-   *   Return the themed array.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   * @throws \Drupal\Core\Entity\EntityMalformedException
+   * @return array|bool
+   *   Return the themed array or 0.
    */
-  public function detailedUsage(array $all_usages, array $showFields, $showHeader) {
+  public function detailedUsage($entityType, $entityId, array $showFields, $showHeader) {
     $rows = [];
     $header = [];
 
-    foreach ($all_usages as $sourceType => $ids) {
+    $allUsages = $this->getUsage($entityType, $entityId);
+    // If there is no usage.
+    if (empty($allUsages)) {
+      return 0;
+    }
+
+    foreach ($allUsages as $sourceType => $ids) {
       // Loop over every usage entry for this entity.
       foreach ($ids as $key => $value) {
         $sourceEntity = $this->entityTypeManager->getStorage($sourceType)->load($key);
@@ -185,6 +188,32 @@ class Usage {
     }
 
     return $build;
+  }
+
+  /**
+   * Usage Total.
+   *
+   * @param string $entityType
+   *   Entity Type.
+   * @param int $entityId
+   *   Entity ID.
+   *
+   * @return int
+   *   Total.
+   */
+  public function getUsageTotal($entityType, $entityId) {
+    $allUsages = $this->getUsage($entityType, $entityId);
+    $itemCount = 0;
+
+    // If there is usage.
+    if (!empty($allUsages)) {
+      foreach ($allUsages as $ids) {
+        // Count all usages.
+        $itemCount += count($ids);
+      }
+    }
+
+    return $itemCount;
   }
 
 }
