@@ -3,7 +3,7 @@
 namespace Drupal\entity_usage_addons\Service;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\entity_usage\EntityUsage;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
@@ -32,12 +32,12 @@ class Usage {
    *   Entity Usage.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   Entity Type Manager.
-   * @param \Drupal\Core\Logger\LoggerChannelFactory $loggerFactory
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $loggerFactory
    *   LoggerChannelFactory.
    */
   public function __construct(EntityUsage $entityUsage,
                               EntityTypeManagerInterface $entityTypeManager,
-                              LoggerChannelFactory $loggerFactory) {
+                              LoggerChannelFactoryInterface $loggerFactory) {
 
     // Entity Usage.
     $this->entityUsage = $entityUsage;
